@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMART FIR 360 - BNSS Section 173 Police & Citizen Platform</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS for Maps -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <!-- App Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <a href="#" class="nav-brand nav-link" data-view="landing">
+      <div class="brand-emblem">⚖️</div>
+      <div class="brand-title">
+        <span>SMART FIR 360</span>
+        <span class="brand-tag">BNSS SEC 173 COMPLIANT</span>
+      </div>
+    </a>
+
+    <nav class="nav-links">
+      <a href="#" class="nav-item nav-link active" id="nav-landing" data-view="landing">Home</a>
+      <a href="#" class="nav-item nav-link" id="nav-citizen" data-view="citizen" style="display: none;">Citizen Portal</a>
+      <a href="#" class="nav-item nav-link" id="nav-police" data-view="police" style="display: none;">Police Dashboard</a>
+    </nav>
+
+    <div class="nav-actions">
+      <!-- Guest UI -->
+      <div id="navAuthGuest" style="display: flex; gap: 0.5rem;">
+        <button class="btn btn-primary btn-sm" id="btnOpenLogin">Login / Register</button>
+      </div>
+
+      <!-- Authenticated UI -->
+      <div id="navAuthUser" style="display: none; align-items: center; gap: 0.75rem;">
+        <div class="user-badge">
+          <span id="userNameBadge" style="font-weight: 600;">Officer</span>
+          <span id="userRoleTag" class="user-role-tag role-police">POLICE</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btnLogout">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       VIEW 1: LANDING & PUBLIC PORTAL
+       ======================================================================== -->
+  <main class="app-container view-section active" id="landingView">
+    <section class="hero-section">
+      <div class="hero-pill">
+        <span>🇮🇳 Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023 Section 173 Ready</span>
+      </div>
+      <h1 class="hero-title">Next-Gen Electronic Complaint & Smart FIR Ecosystem</h1>
+      <p class="hero-desc">
+        Bridging the gap between citizens and police law enforcement. File e-complaints with 3-day verification tracking, statutory 14-day preliminary inquiry monitoring, GIS crime mapping, tamper-evident digital custody, and AI NLP triage.
+      </p>
+
+      <div class="hero-actions">
+        <button class="btn btn-primary" id="btnOpenNewComplaint">
+          <span>📝 File New e-Complaint</span>
+        </button>
+        <button class="btn btn-secondary" onclick="switchView('police')">
+          <span>🛡️ Police Station Portal</span>
+        </button>
+      </div>
+
+      <!-- Quick Track Search Bar -->
+      <div class="quick-track-bar">
+        <input type="text" id="quickTrackInput" class="quick-track-input" placeholder="Enter Complaint Number to Track (e.g., COMP-2026-0001)...">
+        <button class="btn btn-primary" onclick="quickTrack()" style="border-radius: var(--radius-full);">
+          Track Status
+        </button>
+      </div>
+    </section>
+
+    <!-- Public Live Metrics -->
+    <div style="margin-top: 3.5rem;">
+      <h2 style="font-size: 1.1rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem; text-align: center;">
+        Real-Time National Police Network Metrics
+      </h2>
+      <div class="stats-grid">
+        <div class="stat-card border-accent-blue">
+          <div class="stat-header">
+            <span class="stat-label">Total e-Complaints</span>
+            <span class="stat-icon">📄</span>
+          </div>
+          <div class="stat-value" id="statTotalComplaints">0</div>
+          <div class="stat-footer">Lodged under Sec 173(1)</div>
+        </div>
+
+        <div class="stat-card border-accent-saffron">
+          <div class="stat-header">
+            <span class="stat-label">Pending Verification</span>
+            <span class="stat-icon">⏳</span>
+          </div>
+          <div class="stat-value" id="statPendingVerif">0</div>
+          <div class="stat-footer">3-Day statutory window</div>
+        </div>
+
+        <div class="stat-card border-accent-purple">
+          <div class="stat-header">
+            <span class="stat-label">Preliminary Inquiry</span>
+            <span class="stat-icon">🔍</span>
+          </div>
+          <div class="stat-value" id="statPreliminaryInq">0</div>
+          <div class="stat-footer">BNSS 173(3) 14-day limit</div>
+        </div>
+
+        <div class="stat-card border-accent-emerald">
+          <div class="stat-header">
+            <span class="stat-label">Registered FIRs</span>
+            <span class="stat-icon">⚖️</span>
+          </div>
+          <div class="stat-value" id="statFIRsRegistered">0</div>
+          <div class="stat-footer">Certified digital records</div>
+        </div>
+
+        <div class="stat-card border-accent-rose">
+          <div class="stat-header">
+            <span class="stat-label">Cases Resolved</span>
+            <span class="stat-icon">✅</span>
+          </div>
+          <div class="stat-value" id="statResolved">0</div>
+          <div class="stat-footer">Chargesheet / Disposed</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================================================
+       VIEW 2: CITIZEN DASHBOARD
+       ======================================================================== -->
+  <main class="app-container view-section" id="citizenView">
+    <div class="section-header">
+      <div>
+        <h1 class="section-title">Citizen Grievance & FIR Workspace</h1>
+        <p class="section-subtitle">Track your electronic complaints, verify signatures, and access certified FIR copies</p>
+      </div>
+      <button class="btn btn-primary" onclick="document.getElementById('btnOpenNewComplaint').click()">
+        <span>+ File New e-Complaint</span>
+      </button>
+    </div>
+
+    <!-- My Complaints Table -->
+    <div class="table-container">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Complaint No.</th>
+            <th>Subject & Category</th>
+            <th>Incident Date</th>
+            <th>BNSS Status</th>
+            <th>Verification Window</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="citizenComplaintList">
+          <!-- Populated by citizen.js -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- ========================================================================
+       VIEW 3: POLICE DASHBOARD
+       ======================================================================== -->
+  <main class="app-container view-section" id="policeView">
+    <div class="section-header">
+      <div>
+        <h1 class="section-title">Police Investigation & Command Center</h1>
+        <p class="section-subtitle">BNSS Section 173 Electronic Complaint Adjudication, GIS Crime Mapping & Case Management</p>
+      </div>
+    </div>
+
+    <!-- Police Metrics Cards -->
+    <div class="stats-grid">
+      <div class="stat-card border-accent-blue">
+        <div class="stat-header">
+          <span class="stat-label">Active Cases</span>
+          <span class="stat-icon">📂</span>
+        </div>
+        <div class="stat-value" id="pStatTotal">0</div>
+        <div class="stat-footer">All jurisdictional complaints</div>
+      </div>
+
+      <div class="stat-card border-accent-saffron">
+        <div class="stat-header">
+          <span class="stat-label">3-Day Verification</span>
+          <span class="stat-icon">⏱️</span>
+        </div>
+        <div class="stat-value" id="pStatPendingVerif">0</div>
+        <div class="stat-footer">Requires signature within 72 hrs</div>
+      </div>
+
+      <div class="stat-card border-accent-purple">
+        <div class="stat-header">
+          <span class="stat-label">14-Day Prelim Inquiry</span>
+          <span class="stat-icon">🕵️</span>
+        </div>
+        <div class="stat-value" id="pStatInquiry">0</div>
+        <div class="stat-footer">Under BNSS Sec 173(3)</div>
+      </div>
+
+      <div class="stat-card border-accent-emerald">
+        <div class="stat-header">
+          <span class="stat-label">Registered FIRs</span>
+          <span class="stat-icon">🛡️</span>
+        </div>
+        <div class="stat-value" id="pStatFIRs">0</div>
+        <div class="stat-footer">Cognizable FIRs assigned</div>
+      </div>
+
+      <div class="stat-card border-accent-rose">
+        <div class="stat-header">
+          <span class="stat-label">Critical AI Alerts</span>
+          <span class="stat-icon">🚨</span>
+        </div>
+        <div class="stat-value" id="pStatCritical">0</div>
+        <div class="stat-footer">High urgency / Snatching / Fraud</div>
+      </div>
+    </div>
+
+    <!-- GIS Crime Map Section -->
+    <div style="margin-bottom: 2rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+        <h2 style="font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+          <span>🗺️ Jurisdictional GIS Crime & Incident Mapping</span>
+          <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">(Leaflet + OpenStreetMap)</span>
+        </h2>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">Pins color-coded by AI Severity rating</span>
+      </div>
+      <div id="crimeMap"></div>
+    </div>
+
+    <!-- Case Table Filter Bar -->
+    <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+      <select id="policeStatusFilter" class="form-control" style="max-width: 220px;">
+        <option value="all">All BNSS Statuses</option>
+        <option value="submitted">Submitted (Pending 3-Day Verification)</option>
+        <option value="verified">Verified (Ready for FIR/Inquiry)</option>
+        <option value="preliminary_inquiry">Preliminary Inquiry (14 Days)</option>
+        <option value="fir_registered">FIR Registered</option>
+        <option value="closed">Closed / Disposed</option>
+        <option value="rejected">Non-Cognizable</option>
+      </select>
+      <div style="display: flex; flex: 1; gap: 0.5rem;">
+        <input type="text" id="policeSearchInput" class="form-control" placeholder="Search by Complaint No., Subject, Category, Location...">
+        <button class="btn btn-secondary" id="btnPoliceSearch">Search</button>
+      </div>
+    </div>
+
+    <!-- Police Cases Table -->
+    <div class="table-container">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Complaint No.</th>
+            <th>Title & Location</th>
+            <th>Police Station</th>
+            <th>Date</th>
+            <th>BNSS 173 Status</th>
+            <th>Statutory Deadline</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="policeCaseList">
+          <!-- Populated by app.js -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- ========================================================================
+       MODAL 1: CASE DETAIL & WORKSPACE MODAL
+       ======================================================================== -->
+  <div class="modal-backdrop" id="caseDetailModal">
+    <div class="modal-box modal-xl">
+      <div class="modal-header">
+        <h2 class="modal-title" id="detailModalTitle">COMP-2026-0001 - Case Workspace</h2>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        
+        <!-- BNSS Section 173 Stepper -->
+        <div class="bnss-stepper" id="bnssStepper"></div>
+
+        <!-- Police Actions Toolbar -->
+        <div id="policeActionsPanel" style="background: rgba(30, 58, 138, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; display: none;">
+          <div style="font-size: 0.8rem; font-weight: 700; color: var(--accent-saffron); text-transform: uppercase; margin-bottom: 0.6rem;">
+            BNSS Section 173 Statutory Actions
+          </div>
+          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <button class="btn btn-primary btn-sm" id="btnPoliceVerify">✓ Physical Verification (3-Day)</button>
+            <button class="btn btn-accent btn-sm" id="btnPoliceInquiry">⏱️ Order 14-Day Inquiry [Sec 173(3)]</button>
+            <button class="btn btn-primary btn-sm" style="background: linear-gradient(135deg, #10b981, #059669);" id="btnPoliceRegisterFIR">⚖️ Register Official FIR</button>
+            <button class="btn btn-danger btn-sm" id="btnPoliceReject">✕ Mark Non-Cognizable / Close</button>
+          </div>
+        </div>
+
+        <!-- Citizen Aadhaar Verification Callout -->
+        <div id="citizenVerifyCallout" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+              <div style="font-weight: 700; color: #fbbf24;">⚠️ 3-Day Electronic Signature Verification Required</div>
+              <div style="font-size: 0.8rem; color: #d1d5db; margin-top: 0.2rem;">
+                Under BNSS Section 173(1), electronic complaints must be verified within 3 days. Complete verification using Aadhaar OTP now.
+              </div>
+            </div>
+            <button class="btn btn-accent btn-sm" id="btnCitizenVerifyNow">🔐 Verify with Aadhaar OTP</button>
+          </div>
+        </div>
+
+        <!-- Registered FIR Callout Box -->
+        <div id="detailFIRBox" style="background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.4); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+              <span class="badge badge-fir">OFFICIAL FIR REGISTERED</span>
+              <div style="font-size: 1.1rem; font-weight: 800; margin-top: 0.3rem;" id="detailFIRNumber">FIR/DLCP/2026/0001</div>
+              <div style="font-size: 0.85rem; color: #c4b5fd; margin-top: 0.2rem;">Sections: <strong id="detailFIRSections">BNS 303(2)</strong> | Status: <strong id="detailFIRStatus">UNDER INVESTIGATION</strong></div>
+            </div>
+            <button class="btn btn-primary" id="btnViewFIRReport">📄 View / Print Official FIR Copy</button>
+          </div>
+        </div>
+
+        <!-- AI Assistant Insights Panel -->
+        <div class="ai-panel" id="detailAIPanel"></div>
+
+        <!-- Case Details Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Subject</div>
+            <div style="font-weight: 700; font-size: 1rem;" id="detailTitle">-</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Category & Station</div>
+            <div style="font-weight: 600;" id="detailCategory">-</div>
+            <div style="font-size: 0.8rem; color: #9ca3af;" id="detailStation">-</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Occurrence Date & Time</div>
+            <div style="font-weight: 600;" id="detailIncidentTime">-</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Location Coordinates</div>
+            <div style="font-weight: 600;" id="detailLocation">-</div>
+          </div>
+          <div style="grid-column: 1 / -1;">
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem;">Detailed Statement / Incident Narrative</div>
+            <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.75rem; font-size: 0.9rem;" id="detailDescription">-</div>
+          </div>
+          <div style="grid-column: 1 / -1;">
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem;">Suspect / Accused Details</div>
+            <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.75rem; font-size: 0.85rem;" id="detailAccused">-</div>
+          </div>
+        </div>
+
+        <!-- Evidence Locker -->
+        <div style="margin-bottom: 2rem;">
+          <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem;">
+            <span>🔐 Digital Evidence Locker</span>
+            <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: normal;">(SHA-256 Court-Admissible Chain of Custody)</span>
+          </h3>
+          <div id="detailEvidenceList"></div>
+        </div>
+
+        <!-- Case Timeline Stream -->
+        <div>
+          <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 1rem;">
+            <span>📜 Statutory Case Timeline & Audit Log</span>
+          </h3>
+          <div class="timeline-stream" id="detailTimelineStream"></div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary modal-cancel">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 2: FILE NEW E-COMPLAINT WIZARD
+       ======================================================================== -->
+  <div class="modal-backdrop" id="newComplaintModal">
+    <div class="modal-box modal-xl">
+      <div class="modal-header">
+        <h2 class="modal-title">File Electronic Complaint [BNSS Section 173(1)]</h2>
+        <button class="modal-close">&times;</button>
+      </div>
+      <form id="formNewComplaint">
+        <div class="modal-body">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label class="form-label">Complaint Title / Incident Subject *</label>
+              <input type="text" id="cTitle" class="form-control" placeholder="e.g. Snatched mobile phone and gold chain near Market" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Crime Category *</label>
+              <select id="cCategory" class="form-control" required>
+                <option value="Theft & Burglary">Theft & Burglary</option>
+                <option value="Cybercrime & Online Fraud">Cybercrime & Online Fraud</option>
+                <option value="Physical Assault & Hurt">Physical Assault & Hurt</option>
+                <option value="Robbery & Snatching">Robbery & Snatching</option>
+                <option value="Harassment & Stalking">Harassment & Stalking</option>
+                <option value="Financial Cheating / Scams">Financial Cheating / Scams</option>
+                <option value="Missing Person">Missing Person</option>
+                <option value="Other Offences">Other Offences</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Jurisdictional Police Station *</label>
+              <select id="cStation" class="form-control" required>
+                <option value="Connaught Place PS, New Delhi">Connaught Place PS, New Delhi</option>
+                <option value="Cyber Crime Unit, Delhi">Cyber Crime Unit, Delhi</option>
+                <option value="Hauz Khas Police Station, New Delhi">Hauz Khas Police Station, New Delhi</option>
+                <option value="Indiranagar Police Station, Bengaluru">Indiranagar Police Station, Bengaluru</option>
+                <option value="Bandra Police Station, Mumbai">Bandra Police Station, Mumbai</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Incident Date *</label>
+              <input type="date" id="cIncidentDate" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Incident Time</label>
+              <input type="time" id="cIncidentTime" class="form-control">
+            </div>
+
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label class="form-label">Place of Occurrence / Address *</label>
+              <input type="text" id="cLocationName" class="form-control" placeholder="e.g., Gate 3, Metro Station, Barakhamba Road" required>
+            </div>
+
+            <!-- Leaflet Interactive Map Picker -->
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label class="form-label">Pinpoint Exact Crime Location on Map (Click or drag pin) *</label>
+              <div id="pickerMap"></div>
+              <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                <input type="text" id="cLatitude" class="form-control" placeholder="Latitude" readonly required>
+                <input type="text" id="cLongitude" class="form-control" placeholder="Longitude" readonly required>
+              </div>
+            </div>
+
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label class="form-label">Detailed Incident Narrative *</label>
+              <textarea id="cDescription" class="form-control" rows="4" placeholder="Provide accurate chronological statement of what transpired, stolen items, description of offenders, vehicle numbers..." required></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Known Suspects / Accused Details</label>
+              <input type="text" id="cAccused" class="form-control" placeholder="Names, physical description, vehicle plates...">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Witnesses / Contact Details</label>
+              <input type="text" id="cWitness" class="form-control" placeholder="Names & phone numbers of witnesses...">
+            </div>
+
+            <!-- Evidence Upload -->
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label class="form-label">Upload Digital Evidence (Photos, Screenshots, CCTV, Audio, Documents)</label>
+              <input type="file" id="evidenceFilesInput" class="form-control" multiple>
+              <div id="selectedFilesList" style="margin-top: 0.5rem;"></div>
+              <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem;">
+                🔒 Files will be cryptographically hashed with SHA-256 for digital chain of custody.
+              </div>
+            </div>
+
+            <!-- BNSS 173 Declaration -->
+            <div style="grid-column: 1 / -1; background: rgba(255,255,255,0.04); padding: 0.75rem; border-radius: 6px; font-size: 0.8rem; color: #9ca3af;">
+              <label style="display: flex; align-items: flex-start; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" required style="margin-top: 0.2rem;">
+                <span>
+                  I declare under Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023 Section 173 that the information provided is true to the best of my knowledge. I understand that this electronic communication must be verified within three days.
+                </span>
+              </label>
+            </div>
+
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Submit e-Complaint</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 3: AUTHENTICATION (LOGIN / REGISTER)
+       ======================================================================== -->
+  <div class="modal-backdrop" id="authModal">
+    <div class="modal-box" style="max-width: 480px;">
+      <div class="modal-header">
+        <h2 class="modal-title">SMART FIR 360 Authentication</h2>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        
+        <!-- Fast Demo Quick Logins for Judges -->
+        <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 0.75rem; margin-bottom: 1.25rem;">
+          <div style="font-size: 0.75rem; font-weight: 700; color: #93c5fd; text-transform: uppercase; margin-bottom: 0.4rem;">
+            ⚡ Quick Demo Logins (1-Click)
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button type="button" class="btn btn-secondary btn-sm" id="demoPoliceLogin" style="flex: 1;">🛡️ Login as Police Inspector</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="demoCitizenLogin" style="flex: 1;">👤 Login as Citizen</button>
+          </div>
+        </div>
+
+        <!-- Auth Tabs -->
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem;">
+          <button type="button" class="btn btn-secondary btn-sm active" id="authTabLogin" style="flex: 1;">Sign In</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="authTabRegister" style="flex: 1;">Register Citizen</button>
+        </div>
+
+        <!-- Login Form -->
+        <div id="loginFormContainer">
+          <form id="formLogin">
+            <div class="form-group">
+              <label class="form-label">Email Address</label>
+              <input type="email" id="loginEmail" class="form-control" placeholder="name@example.com" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password</label>
+              <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">Sign In</button>
+          </form>
+        </div>
+
+        <!-- Register Form -->
+        <div id="registerFormContainer" style="display: none;">
+          <form id="formRegister">
+            <div class="form-group">
+              <label class="form-label">Full Name *</label>
+              <input type="text" id="regFullName" class="form-control" placeholder="e.g. Rajesh Kumar" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email Address *</label>
+              <input type="email" id="regEmail" class="form-control" placeholder="rajesh@example.com" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone Number *</label>
+              <input type="text" id="regPhone" class="form-control" placeholder="+91 9876543210" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Aadhaar Last 4 Digits</label>
+              <input type="text" id="regAadhar" maxlength="4" class="form-control" placeholder="4321">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Account Role</label>
+              <select id="regRole" class="form-control">
+                <option value="citizen">Citizen Complainant</option>
+                <option value="police_officer">Police Officer / Investigator</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password (min 6 characters) *</label>
+              <input type="password" id="regPassword" class="form-control" placeholder="••••••••" minlength="6" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">Create Account</button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 4: PRELIMINARY INQUIRY MODAL (BNSS 173(3))
+       ======================================================================== -->
+  <div class="modal-backdrop" id="preliminaryInquiryModal">
+    <div class="modal-box" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2 class="modal-title">Initiate Preliminary Inquiry [BNSS Sec 173(3)]</h2>
+        <button class="modal-close">&times;</button>
+      </div>
+      <form id="formPreliminaryInquiry">
+        <input type="hidden" id="inquiryComplaintId">
+        <div class="modal-body">
+          <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px; padding: 0.75rem; font-size: 0.8rem; color: #fbbf24; margin-bottom: 1rem;">
+            ⚖️ Under BNSS Section 173(3), for offences punishable with 3 to 7 years imprisonment, preliminary inquiry can be conducted within 14 days with prior permission of DySP.
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">DySP Permission Reference Number *</label>
+            <input type="text" id="inquiryDyspRef" class="form-control" value="DYSP/PERM/BNSS173(3)/2026/041" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Preliminary Recommendation *</label>
+            <select id="inquiryRecommendation" class="form-control" required>
+              <option value="Ascertain prima facie cognizable offence before FIR">Ascertain prima facie cognizable offence before FIR</option>
+              <option value="Verify cyber transaction trail & bank nodal records">Verify cyber transaction trail & bank nodal records</option>
+              <option value="Examine property civil dispute vs criminal breach">Examine property civil dispute vs criminal breach</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Inquiry Scope & Notes *</label>
+            <textarea id="inquiryNotes" class="form-control" rows="3" placeholder="Enter directions for IO, CCTV checks, notices issued under BNSS..." required>Sub-Inspector assigned to inspect crime scene and issue Section 94 notice to service provider.</textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-accent">Start 14-Day Inquiry</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 5: REGISTER FIR MODAL (BNSS 173)
+       ======================================================================== -->
+  <div class="modal-backdrop" id="registerFIRModal">
+    <div class="modal-box" style="max-width: 650px;">
+      <div class="modal-header">
+        <h2 class="modal-title">Register First Information Report (FIR)</h2>
+        <button class="modal-close">&times;</button>
+      </div>
+      <form id="formRegisterFIR">
+        <input type="hidden" id="firComplaintId">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Police Station *</label>
+            <input type="text" id="firStationInput" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Applicable Legal Provisions (BNS Sections) *</label>
+            <input type="text" id="firSectionsInput" class="form-control" placeholder="e.g. BNS Section 303(2), BNS Section 318(4)" required>
+            <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem;">Auto-populated from AI / NLP analysis if available.</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Date of Occurrence *</label>
+            <input type="text" id="firOccurrenceDateInput" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Place of Occurrence *</label>
+            <input type="text" id="firPlaceInput" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Initial Direction to Investigating Officer (IO)</label>
+            <textarea id="firSummaryInput" class="form-control" rows="3">FIR duly registered under BNSS Sec 173. IO dispatched to seize digital CCTV evidence and secure crime scene in chain of custody.</textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #10b981, #059669);">
+            Generate Certified FIR
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- App JS Scripts -->
+  <script src="api.js"></script>
+  <script src="map.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
